@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 // Facebook Posting Function
 // --------------------
 async function postToFacebook(message) {
-  const pageAccessToken = process.env.FB_PAGE_TOKEN;
+  const pageAccessToken = process.env.FACEBOOK_USER_TOKEN;
   const url = `https://graph.facebook.com/v21.0/me/feed`;
 
   try {
