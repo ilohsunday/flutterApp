@@ -1,15 +1,17 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
+const cors = require("cors");   // 👈 add this
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors()); // 👈 allow requests from anywhere
 
 // --------------------
 // Facebook Posting Function
 // --------------------
 async function postToFacebook(message) {
-  const userAccessToken = process.env.FACEBOOK_USER_TOKEN; // 👈 Use your token from Render env
+  const userAccessToken = process.env.FACEBOOK_USER_TOKEN; // 👈 token from Render env
   const url = `https://graph.facebook.com/v21.0/me/feed`;
 
   try {
