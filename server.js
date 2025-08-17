@@ -1,8 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
+const cors = require("cors");
 
 const app = express();
+app.use(cors()); // ✅ allow browser requests
 app.use(bodyParser.json());
 
 // --------------------
@@ -22,9 +24,10 @@ async function postToFacebookPage(message) {
     return response.data;
   } catch (err) {
     console.error("Facebook Page Post Error:", err.response?.data || err.message);
+
+    // ✅ Always return Facebook raw error JSON
     throw new Error(
-      "Failed to post to Facebook Page: " +
-        JSON.stringify(err.response?.data || err.message)
+      JSON.stringify(err.response?.data || { message: err.message })
     );
   }
 }
@@ -45,7 +48,10 @@ app.post("/publish", async (req, res) => {
 
     res.json({ success: true, platform, response });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: "Failed to post",
+      details: err.message, // ✅ shows the raw Facebook API error
+    });
   }
 });
 
