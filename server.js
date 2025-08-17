@@ -11,7 +11,7 @@ app.use(cors()); // allow frontend requests
 // Facebook Posting Function
 // --------------------
 async function postToFacebook(message) {
-  const userAccessToken = process.env.FACEBOOK_USER_TOKEN; // 👈 Token from Render env
+  const userAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN; // 👈 Token from Render env
   const url = `https://graph.facebook.com/v21.0/me/feed`;
 
   try {
