@@ -1,32 +1,30 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-const cors = require("cors");
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors()); // allow frontend requests
 
 // --------------------
-// Facebook Posting Function
+// Post directly to Page with Page Token
 // --------------------
-async function postToFacebook(message) {
-  const userAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN; // 👈 Token from Render env
-  const url = `https://graph.facebook.com/v21.0/me/feed`;
+async function postToFacebookPage(message) {
+  const pageId = process.env.FACEBOOK_PAGE_ID; // Put your Page ID here
+  const pageAccessToken = process.env.FACEBOOK_PAGE_TOKEN; // Permanent Page Token
 
   try {
+    const url = `https://graph.facebook.com/v21.0/${pageId}/feed`;
     const response = await axios.post(url, {
       message: message,
-      access_token: userAccessToken,
+      access_token: pageAccessToken,
     });
+
     return response.data;
   } catch (err) {
-    // Log full error in server console
-    console.error("Facebook Post Error:", err.response?.data || err.message);
-
-    // Throw error with more details
+    console.error("Facebook Page Post Error:", err.response?.data || err.message);
     throw new Error(
-      JSON.stringify(err.response?.data || { message: err.message })
+      "Failed to post to Facebook Page: " +
+        JSON.stringify(err.response?.data || err.message)
     );
   }
 }
@@ -40,17 +38,14 @@ app.post("/publish", async (req, res) => {
   try {
     let response;
     if (platform === "facebook") {
-      response = await postToFacebook(message);
+      response = await postToFacebookPage(message);
     } else {
       return res.status(400).json({ error: "Platform not supported yet" });
     }
 
     res.json({ success: true, platform, response });
   } catch (err) {
-    res.status(500).json({
-      error: "Failed to post to Facebook",
-      details: err.message, // 👈 Show Facebook error details here
-    });
+    res.status(500).json({ error: err.message });
   }
 });
 
