@@ -24,6 +24,12 @@ async function postToFacebookPage(message) {
   }
 }
 
+// Home Route
+app.get("/", (req, res) => {
+  res.send("✅ Server is running and posting directly to Facebook!");
+});
+
+
 // --------------------
 // Test Direct Post on Startup
 // --------------------
