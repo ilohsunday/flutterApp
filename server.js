@@ -1,18 +1,16 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-const cors = require("cors");
 
 const app = express();
-app.use(cors()); // ✅ allow browser requests
 app.use(bodyParser.json());
 
 // --------------------
-// Post directly to Page with Page Token
+// Post directly to Page
 // --------------------
 async function postToFacebookPage(message) {
-  const pageId = process.env.FACEBOOK_PAGE_ID; // Put your Page ID here
-  const pageAccessToken = process.env.FACEBOOK_PAGE_TOKEN; // Permanent Page Token
+  const pageId = process.env.FACEBOOK_PAGE_ID;  // use environment variable
+  const pageAccessToken = process.env.FACEBOOK_PAGE_TOKEN;
 
   try {
     const url = `https://graph.facebook.com/v21.0/${pageId}/feed`;
@@ -20,50 +18,16 @@ async function postToFacebookPage(message) {
       message: message,
       access_token: pageAccessToken,
     });
-
-    return response.data;
+    console.log("✅ Post success:", response.data);
   } catch (err) {
-    console.error("Facebook Page Post Error:", err.response?.data || err.message);
-
-    // ✅ Always return Facebook raw error JSON
-    throw new Error(
-      JSON.stringify(err.response?.data || { message: err.message })
-    );
+    console.error("❌ Facebook Page Post Error:", err.response?.data || err.message);
   }
 }
 
 // --------------------
-// Publish Route
+// Test Direct Post on Startup
 // --------------------
-app.post("/publish", async (req, res) => {
-  const { platform, message } = req.body;
-
-  try {
-    let response;
-    if (platform === "facebook") {
-      response = await postToFacebookPage(message);
-    } else {
-      return res.status(400).json({ error: "Platform not supported yet" });
-    }
-
-    res.json({ success: true, platform, response });
-  } catch (err) {
-    res.status(500).json({
-      error: "Failed to post",
-      details: err.message, // ✅ shows the raw Facebook API error
-    });
-  }
+app.listen(process.env.PORT || 3000, () => {
+  console.log("🚀 Server started… sending test post to Facebook page...");
+  postToFacebookPage("🚀 Hello from server.js direct post!");
 });
-
-// --------------------
-// Home Route
-// --------------------
-app.get("/", (req, res) => {
-  res.send("✅ Cross-Posting App is running. Use POST /publish to publish content.");
-});
-
-// --------------------
-// Start Server
-// --------------------
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
