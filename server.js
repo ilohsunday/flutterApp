@@ -1,17 +1,17 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-const cors = require("cors");   // 👈 add this
+const cors = require("cors");
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors()); // 👈 allow requests from anywhere
+app.use(cors()); // allow frontend requests
 
 // --------------------
 // Facebook Posting Function
 // --------------------
 async function postToFacebook(message) {
-  const userAccessToken = process.env.FACEBOOK_USER_TOKEN; // 👈 token from Render env
+  const userAccessToken = process.env.FACEBOOK_USER_TOKEN; // 👈 Token from Render env
   const url = `https://graph.facebook.com/v21.0/me/feed`;
 
   try {
@@ -21,8 +21,13 @@ async function postToFacebook(message) {
     });
     return response.data;
   } catch (err) {
+    // Log full error in server console
     console.error("Facebook Post Error:", err.response?.data || err.message);
-    throw new Error("Failed to post to Facebook");
+
+    // Throw error with more details
+    throw new Error(
+      JSON.stringify(err.response?.data || { message: err.message })
+    );
   }
 }
 
@@ -42,7 +47,10 @@ app.post("/publish", async (req, res) => {
 
     res.json({ success: true, platform, response });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: "Failed to post to Facebook",
+      details: err.message, // 👈 Show Facebook error details here
+    });
   }
 });
 
