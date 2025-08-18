@@ -1,39 +1,47 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-const cors = require("cors");
 
 const app = express();
-app.use(cors()); // ✅ allow browser requests
 app.use(bodyParser.json());
 
 // --------------------
-// Post directly to Page with Page Token
+// Load Facebook App Config from environment
+// --------------------
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+
+// (Optional for now: still allow direct Page posting for your page)
+const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
+const FACEBOOK_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN;
+
+// --------------------
+// Post directly to your Page (current mode)
 // --------------------
 async function postToFacebookPage(message) {
-  const pageId = process.env.FACEBOOK_PAGE_ID; // Put your Page ID here
-  const pageAccessToken = process.env.FACEBOOK_PAGE_TOKEN; // Permanent Page Token
+  if (!FACEBOOK_PAGE_ID || !FACEBOOK_PAGE_TOKEN) {
+    throw new Error("Missing PAGE_ID or PAGE_TOKEN in environment");
+  }
 
   try {
-    const url = `https://graph.facebook.com/v21.0/${pageId}/feed`;
+    const url = `https://graph.facebook.com/v21.0/${FACEBOOK_PAGE_ID}/feed`;
     const response = await axios.post(url, {
-      message: message,
-      access_token: pageAccessToken,
+      message,
+      access_token: FACEBOOK_PAGE_TOKEN,
     });
 
     return response.data;
   } catch (err) {
     console.error("Facebook Page Post Error:", err.response?.data || err.message);
-
-    // ✅ Always return Facebook raw error JSON
     throw new Error(
-      JSON.stringify(err.response?.data || { message: err.message })
+      "Failed to post to Facebook Page: " +
+        JSON.stringify(err.response?.data || err.message)
     );
   }
 }
 
 // --------------------
-// Publish Route
+// Route for posting
 // --------------------
 app.post("/publish", async (req, res) => {
   const { platform, message } = req.body;
@@ -48,11 +56,20 @@ app.post("/publish", async (req, res) => {
 
     res.json({ success: true, platform, response });
   } catch (err) {
-    res.status(500).json({
-      error: "Failed to post",
-      details: err.message, // ✅ shows the raw Facebook API error
-    });
+    res.status(500).json({ error: err.message });
   }
+});
+
+// --------------------
+// Debug route: show app config
+// --------------------
+app.get("/config", (req, res) => {
+  res.json({
+    FACEBOOK_APP_ID: FACEBOOK_APP_ID ? "✅ set" : "❌ missing",
+    FACEBOOK_APP_SECRET: FACEBOOK_APP_SECRET ? "✅ set" : "❌ missing",
+    FACEBOOK_PAGE_ID: FACEBOOK_PAGE_ID ? "✅ set" : "❌ missing",
+    FACEBOOK_PAGE_TOKEN: FACEBOOK_PAGE_TOKEN ? "✅ set" : "❌ missing",
+  });
 });
 
 // --------------------
@@ -67,4 +84,3 @@ app.get("/", (req, res) => {
 // --------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-                  
