@@ -1,86 +1,67 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const axios = require("axios");
+import express from "express";
+import fetch from "node-fetch";
+import session from "express-session";
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(session({ secret: "mysecret", resave: false, saveUninitialized: true }));
 
-// --------------------
-// Load Facebook App Config from environment
-// --------------------
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+const REDIRECT_URI = "https://flutterapp-9u2n.onrender.com/callback"; // change if needed
 
-// (Optional for now: still allow direct Page posting for your page)
-const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
-const FACEBOOK_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN;
+// 🔹 Step 1: Login route
+app.get("/login", (req, res) => {
+  const fbAuthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_manage_posts,pages_read_engagement,pages_show_list`;
+  res.redirect(fbAuthUrl);
+});
 
-// --------------------
-// Post directly to your Page (current mode)
-// --------------------
-async function postToFacebookPage(message) {
-  if (!FACEBOOK_PAGE_ID || !FACEBOOK_PAGE_TOKEN) {
-    throw new Error("Missing PAGE_ID or PAGE_TOKEN in environment");
-  }
+// 🔹 Step 2: Callback from Facebook
+app.get("/callback", async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.send("❌ No code returned from Facebook");
 
   try {
-    const url = `https://graph.facebook.com/v21.0/${FACEBOOK_PAGE_ID}/feed`;
-    const response = await axios.post(url, {
-      message,
-      access_token: FACEBOOK_PAGE_TOKEN,
+    // Exchange code for access token
+    const tokenRes = await fetch(
+      `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&client_secret=${FACEBOOK_APP_SECRET}&code=${code}`
+    );
+    const tokenData = await tokenRes.json();
+
+    if (tokenData.error) return res.json(tokenData);
+
+    const userAccessToken = tokenData.access_token;
+    req.session.userAccessToken = userAccessToken;
+
+    // 🔹 Fetch user’s pages
+    const pagesRes = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${userAccessToken}`);
+    const pagesData = await pagesRes.json();
+
+    // Redirect back to frontend with pages JSON in query
+    res.redirect(`/?pages=${encodeURIComponent(JSON.stringify(pagesData.data || []))}`);
+  } catch (err) {
+    console.error(err);
+    res.send("❌ Error during callback");
+  }
+});
+
+// 🔹 Step 3: Publish post to selected page
+app.post("/publish", async (req, res) => {
+  const { pageId, pageAccessToken, message } = req.body;
+
+  try {
+    const postRes = await fetch(`https://graph.facebook.com/v20.0/${pageId}/feed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, access_token: pageAccessToken }),
     });
 
-    return response.data;
+    const postData = await postRes.json();
+    res.json(postData);
   } catch (err) {
-    console.error("Facebook Page Post Error:", err.response?.data || err.message);
-    throw new Error(
-      "Failed to post to Facebook Page: " +
-        JSON.stringify(err.response?.data || err.message)
-    );
-  }
-}
-
-// --------------------
-// Route for posting
-// --------------------
-app.post("/publish", async (req, res) => {
-  const { platform, message } = req.body;
-
-  try {
-    let response;
-    if (platform === "facebook") {
-      response = await postToFacebookPage(message);
-    } else {
-      return res.status(400).json({ error: "Platform not supported yet" });
-    }
-
-    res.json({ success: true, platform, response });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Failed to publish post" });
   }
 });
 
-// --------------------
-// Debug route: show app config
-// --------------------
-app.get("/config", (req, res) => {
-  res.json({
-    FACEBOOK_APP_ID: FACEBOOK_APP_ID ? "✅ set" : "❌ missing",
-    FACEBOOK_APP_SECRET: FACEBOOK_APP_SECRET ? "✅ set" : "❌ missing",
-    FACEBOOK_PAGE_ID: FACEBOOK_PAGE_ID ? "✅ set" : "❌ missing",
-    FACEBOOK_PAGE_TOKEN: FACEBOOK_PAGE_TOKEN ? "✅ set" : "❌ missing",
-  });
-});
-
-// --------------------
-// Home Route
-// --------------------
-app.get("/", (req, res) => {
-  res.send("✅ Cross-Posting App is running. Use POST /publish to publish content.");
-});
-
-// --------------------
-// Start Server
-// --------------------
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(3000, () => console.log("✅ Server running on port 3000"));
