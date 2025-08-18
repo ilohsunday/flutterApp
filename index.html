@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post to Facebook Page</title>
+</head>
+<body>
+  <h2>📢 Facebook Page Poster</h2>
+
+  <!-- Login Button -->
+  <div id="loginSection">
+    <a href="https://flutterapp-9u2n.onrender.com/login">
+      <button>Login with Facebook</button>
+    </a>
+  </div>
+
+  <!-- Post Form (hidden until login) -->
+  <div id="postSection" style="display:none;">
+    <label>Select Page:</label><br>
+    <select id="pageSelect"></select><br><br>
+
+    <label>Message:</label><br>
+    <textarea id="message" rows="4" cols="40"></textarea><br><br>
+
+    <button id="postBtn">Post to Page</button>
+  </div>
+
+  <div id="result" style="margin-top:20px; white-space:pre; background:#f4f4f4; padding:10px; border-radius:6px;"></div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const pagesParam = urlParams.get("pages");
+
+    let pages = [];
+    if (pagesParam) {
+      try {
+        pages = JSON.parse(decodeURIComponent(pagesParam));
+      } catch (e) { console.error(e); }
+    }
+
+    if (pages.length > 0) {
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("postSection").style.display = "block";
+
+      const pageSelect = document.getElementById("pageSelect");
+      pages.forEach(page => {
+        const option = document.createElement("option");
+        option.value = JSON.stringify({id: page.id, token: page.access_token});
+        option.textContent = page.name;
+        pageSelect.appendChild(option);
+      });
+    }
+
+    document.getElementById("postBtn").addEventListener("click", async () => {
+      const selected = JSON.parse(document.getElementById("pageSelect").value);
+      const message = document.getElementById("message").value;
+
+      try {
+        const res = await fetch("https://flutterapp-9u2n.onrender.com/publish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pageId: selected.id,
+            pageAccessToken: selected.token,
+            message
+          })
+        });
+
+        const data = await res.json();
+        document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("result").innerText = "❌ Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
