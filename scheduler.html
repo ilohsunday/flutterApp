@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scheduler</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Schedule Your Post</h2>
+    <form id="postForm">
+      <label>Message:</label>
+      <textarea name="message" placeholder="What's on your mind?" required></textarea>
+
+      <label>Schedule Time:</label>
+      <input type="datetime-local" name="scheduledTime" required />
+
+      <button type="submit">Schedule</button>
+    </form>
+
+    <h3>Queue & Schedule</h3>
+    <div id="queue"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("postForm");
+    const queueDiv = document.getElementById("queue");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(form).entries());
+
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        const item = document.createElement("p");
+        item.textContent = `📅 ${formData.scheduledTime} → ${formData.message}`;
+        queueDiv.appendChild(item);
+        form.reset();
+      }
+    });
+  </script>
+</body>
+</html>
