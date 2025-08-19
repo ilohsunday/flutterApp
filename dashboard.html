@@ -2,85 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Facebook Poster</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #postBtn { padding: 10px 15px; margin-top: 10px; cursor: pointer; }
-    textarea { width: 100%; height: 80px; margin-top: 10px; }
-    select { width: 100%; margin-top: 10px; padding: 5px; }
-    .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>📊 Dashboard</h1>
-
-  <div class="card">
-    <h3>Select a Page</h3>
-    <select id="pages"></select>
+  <div class="sidebar">
+    <h2>Menu</h2>
+    <a href="/dashboard">📌 Create</a>
+    <a href="#">📅 Planner</a>
+    <a href="/scheduler">🕒 Scheduler</a>
+    <a href="#">📊 Analytics</a>
+    <a href="#">⚙ Settings</a>
   </div>
 
-  <div class="card">
-    <h3>Write your post</h3>
-    <textarea id="message" placeholder="Type your post here..."></textarea>
-    <br>
-    <button id="postBtn">Publish Post</button>
-    <p id="result"></p>
+  <div class="main">
+    <h1>Create New Post</h1>
+    <div class="post-card">
+      <textarea placeholder="Write your post..."></textarea>
+      <input type="file" />
+      <button onclick="goToScheduler()">Next ➝</button>
+    </div>
   </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (!token) {
-      alert("⚠️ You must login first!");
-      window.location.href = "/";
+    function goToScheduler() {
+      window.location.href = "/scheduler";
     }
-
-    const pagesDropdown = document.getElementById("pages");
-    const postBtn = document.getElementById("postBtn");
-    const messageInput = document.getElementById("message");
-    const result = document.getElementById("result");
-
-    // Load pages
-    fetch(`/pages?token=${token}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.data) {
-          data.data.forEach(page => {
-            const option = document.createElement("option");
-            option.value = page.id + "|" + page.access_token;
-            option.textContent = page.name;
-            pagesDropdown.appendChild(option);
-          });
-        }
-      })
-      .catch(err => console.error(err));
-
-    // Publish post
-    postBtn.onclick = () => {
-      const selected = pagesDropdown.value.split("|");
-      const pageId = selected[0];
-      const pageAccessToken = selected[1];
-      const message = messageInput.value;
-
-      fetch("/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, pageAccessToken, message })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.id) {
-            result.textContent = "✅ Post published successfully! ID: " + data.id;
-          } else {
-            result.textContent = "❌ Error: " + JSON.stringify(data);
-          }
-        })
-        .catch(err => {
-          result.textContent = "❌ Error: " + err.message;
-        });
-    };
   </script>
 </body>
 </html>
