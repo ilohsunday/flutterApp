@@ -1,15 +1,19 @@
 import express from "express";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 
-// Environment variables: set these on Render
+// Environment variables (set them in Render dashboard)
 const APP_ID = process.env.FACEBOOK_APP_ID;
 const APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 
+// --- Serve static files (index.html, dashboard.html, etc.) ---
+app.use(express.static("./"));
+
 // --- Home route ---
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "./" }); // Serve your index.html
+  res.sendFile("index.html", { root: "./" });
 });
 
 // --- Login route (redirect to Facebook OAuth) ---
@@ -40,8 +44,8 @@ app.get("/callback", async (req, res) => {
       return res.status(400).json(tokenData);
     }
 
-    // ✅ Redirect back to index.html with the token
-    res.redirect(`/?token=${tokenData.access_token}`);
+    // ✅ Redirect to dashboard with token
+    res.redirect(`/dashboard.html?token=${tokenData.access_token}`);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -85,5 +89,24 @@ app.post("/publish", async (req, res) => {
   }
 });
 
+// --- Fetch Posts from a Page (for history) ---
+app.get("/posts", async (req, res) => {
+  const { pageId, pageAccessToken } = req.query;
+
+  if (!pageId || !pageAccessToken)
+    return res.status(400).json({ error: "Missing required fields" });
+
+  try {
+    const fbRes = await fetch(
+      `https://graph.facebook.com/${pageId}/posts?access_token=${pageAccessToken}`
+    );
+    const data = await fbRes.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Start server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
