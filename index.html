@@ -2,76 +2,92 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Post to Facebook Page</title>
+  <title>Facebook Page Poster</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    button, select, textarea { margin: 10px 0; padding: 10px; font-size: 16px; }
+    textarea { width: 100%; height: 100px; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <h2>📢 Facebook Page Poster</h2>
+  <h2>🚀 Facebook Page Poster</h2>
+  <button id="loginBtn">Login with Facebook</button>
 
-  <!-- Login Button -->
-  <div id="loginSection">
-    <a href="https://flutterapp-9u2n.onrender.com/login">
-      <button>Login with Facebook</button>
-    </a>
+  <div id="postArea" class="hidden">
+    <h3>Select a Page</h3>
+    <select id="pagesDropdown"></select>
+
+    <h3>Write a Post</h3>
+    <textarea id="postMessage" placeholder="Type your message..."></textarea>
+    <br>
+    <button id="postBtn">Publish Post</button>
   </div>
-
-  <!-- Post Form (hidden until login) -->
-  <div id="postSection" style="display:none;">
-    <label>Select Page:</label><br>
-    <select id="pageSelect"></select><br><br>
-
-    <label>Message:</label><br>
-    <textarea id="message" rows="4" cols="40"></textarea><br><br>
-
-    <button id="postBtn">Post to Page</button>
-  </div>
-
-  <div id="result" style="margin-top:20px; white-space:pre; background:#f4f4f4; padding:10px; border-radius:6px;"></div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const pagesParam = urlParams.get("pages");
+    const serverUrl = "https://flutterapp-9u2n.onrender.com"; // your Render server
 
-    let pages = [];
-    if (pagesParam) {
-      try {
-        pages = JSON.parse(decodeURIComponent(pagesParam));
-      } catch (e) { console.error(e); }
-    }
-
-    if (pages.length > 0) {
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("postSection").style.display = "block";
-
-      const pageSelect = document.getElementById("pageSelect");
-      pages.forEach(page => {
-        const option = document.createElement("option");
-        option.value = JSON.stringify({id: page.id, token: page.access_token});
-        option.textContent = page.name;
-        pageSelect.appendChild(option);
-      });
-    }
-
-    document.getElementById("postBtn").addEventListener("click", async () => {
-      const selected = JSON.parse(document.getElementById("pageSelect").value);
-      const message = document.getElementById("message").value;
-
-      try {
-        const res = await fetch("https://flutterapp-9u2n.onrender.com/publish", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pageId: selected.id,
-            pageAccessToken: selected.token,
-            message
-          })
-        });
-
-        const data = await res.json();
-        document.getElementById("result").innerText = JSON.stringify(data, null, 2);
-      } catch (err) {
-        document.getElementById("result").innerText = "❌ Error: " + err.message;
-      }
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      window.location.href = serverUrl + "/login";
     });
+
+    // Helper: get query params
+    function getQueryParam(param) {
+      return new URLSearchParams(window.location.search).get(param);
+    }
+
+    // Step 1: After login, get token from /callback
+    const code = getQueryParam("code");
+    if (code) {
+      fetch(`${serverUrl}/callback?code=${code}`)
+        .then(res => res.json())
+        .then(data => {
+          const userToken = data.access_token;
+          if (!userToken) {
+            alert("❌ Login failed");
+            return;
+          }
+
+          // Step 2: Get pages
+          fetch(`${serverUrl}/pages?token=${userToken}`)
+            .then(res => res.json())
+            .then(pagesData => {
+              const dropdown = document.getElementById("pagesDropdown");
+              pagesData.data.forEach(page => {
+                const opt = document.createElement("option");
+                opt.value = JSON.stringify(page); // store page object
+                opt.innerText = page.name;
+                dropdown.appendChild(opt);
+              });
+
+              document.getElementById("postArea").classList.remove("hidden");
+
+              // Step 3: Post button action
+              document.getElementById("postBtn").addEventListener("click", () => {
+                const selectedPage = JSON.parse(dropdown.value);
+                const message = document.getElementById("postMessage").value;
+
+                fetch(`${serverUrl}/publish`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    pageId: selectedPage.id,
+                    pageAccessToken: selectedPage.access_token,
+                    message
+                  })
+                })
+                .then(res => res.json())
+                .then(resp => {
+                  if (resp.id) {
+                    alert("✅ Post published successfully!");
+                  } else {
+                    alert("❌ Failed: " + JSON.stringify(resp));
+                  }
+                });
+              });
+            });
+        });
+    }
   </script>
 </body>
 </html>
