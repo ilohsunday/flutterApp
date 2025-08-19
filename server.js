@@ -35,7 +35,29 @@ app.get("/callback", async (req, res) => {
     );
 
     const tokenData = await tokenRes.json();
-    res.json(tokenData); // Returns access token info for testing
+
+    if (tokenData.error) {
+      return res.status(400).json(tokenData);
+    }
+
+    // ✅ Redirect back to index.html with the token
+    res.redirect(`/?token=${tokenData.access_token}`);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Get User Pages ---
+app.get("/pages", async (req, res) => {
+  const userToken = req.query.token;
+  if (!userToken) return res.status(400).json({ error: "Missing user token" });
+
+  try {
+    const fbRes = await fetch(
+      `https://graph.facebook.com/v20.0/me/accounts?access_token=${userToken}`
+    );
+    const data = await fbRes.json();
+    res.json(data); // returns list of pages + their page_access_tokens
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
