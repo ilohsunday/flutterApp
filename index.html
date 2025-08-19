@@ -3,115 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Facebook Page Poster</title>
+  <title>Login with Facebook</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    button {
-      background: #1877f2;
-      color: #fff;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover { background: #145dbf; }
-    select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    textarea { height: 100px; }
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 12px 20px; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📢 Facebook Page Poster</h2>
-
-    <!-- Login Button -->
-    <div id="loginSection">
-      <a href="/login"><button>Login with Facebook</button></a>
-    </div>
-
-    <!-- Post Section -->
-    <div id="postSection" style="display:none;">
-      <h3>Select a Page</h3>
-      <select id="pages"></select>
-
-      <h3>Write a Post</h3>
-      <textarea id="message" placeholder="Write your post here..."></textarea>
-
-      <button onclick="publishPost()">Publish Post</button>
-
-      <p id="status"></p>
-    </div>
-  </div>
-
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (token) {
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("postSection").style.display = "block";
-
-      // Fetch user pages
-      fetch(`/pages?token=${token}`)
-        .then(res => res.json())
-        .then(data => {
-          const select = document.getElementById("pages");
-          if (data.data) {
-            data.data.forEach(page => {
-              const option = document.createElement("option");
-              option.value = JSON.stringify({
-                id: page.id,
-                token: page.access_token
-              });
-              option.textContent = page.name;
-              select.appendChild(option);
-            });
-          } else {
-            document.getElementById("status").textContent = "❌ Could not load pages";
-          }
-        });
-    }
-
-    function publishPost() {
-      const pageData = JSON.parse(document.getElementById("pages").value);
-      const message = document.getElementById("message").value;
-
-      fetch("/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageId: pageData.id,
-          pageAccessToken: pageData.token,
-          message
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.id) {
-          document.getElementById("status").textContent = "✅ Post published successfully!";
-        } else {
-          document.getElementById("status").textContent = "❌ Error: " + JSON.stringify(data);
-        }
-      });
-    }
-  </script>
+  <h1>📢 Facebook Page Poster</h1>
+  <p>Login to continue</p>
+  <button onclick="window.location.href='/login'">Login with Facebook</button>
 </body>
 </html>
