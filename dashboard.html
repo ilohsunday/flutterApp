@@ -41,6 +41,7 @@
       });
       const data = await res.json();
       alert(JSON.stringify(data));
+      document.getElementByTagNames('h1'). innerText = JSON.stringify(data);
     }
   </script>
 </body>
