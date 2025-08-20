@@ -1,33 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Menu</h2>
-    <a href="/dashboard">📌 Create</a>
-    <a href="#">📅 Planner</a>
-    <a href="/scheduler">🕒 Scheduler</a>
-    <a href="#">📊 Analytics</a>
-    <a href="#">⚙ Settings</a>
-  </div>
+  <h1>📢 Facebook Page Dashboard</h1>
 
-  <div class="main">
-    <h1>Create New Post</h1>
-    <div class="post-card">
-      <textarea placeholder="Write your post..."></textarea>
-      <input type="file" />
-      <button onclick="goToScheduler()">Next ➝</button>
-    </div>
-  </div>
+  <textarea id="message" placeholder="Write your post..."></textarea>
+  <br><br>
+
+  <button onclick="postNow()">Post Now</button>
+  <button onclick="schedulePost()">Schedule Post</button>
+
+  <input type="datetime-local" id="scheduleTime">
 
   <script>
-    function goToScheduler() {
-      window.location.href = "/scheduler";
+    const pageId = "YOUR_PAGE_ID"; // replace or fetch dynamically
+    const pageAccessToken = "YOUR_PAGE_ACCESS_TOKEN"; // replace or fetch dynamically
+
+    async function postNow() {
+      const message = document.getElementById("message").value;
+      const res = await fetch("/post-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, pageAccessToken, message })
+      });
+      const data = await res.json();
+      alert(JSON.stringify(data));
+    }
+
+    async function schedulePost() {
+      const message = document.getElementById("message").value;
+      const scheduleTime = document.getElementById("scheduleTime").value;
+
+      const res = await fetch("/schedule-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, pageAccessToken, message, scheduleTime })
+      });
+      const data = await res.json();
+      alert(JSON.stringify(data));
     }
   </script>
 </body>
