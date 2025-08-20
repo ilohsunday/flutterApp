@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 // Facebook App credentials (set them in Render environment)
 const APP_ID = process.env.FACEBOOK_APP_ID;
 const APP_SECRET = process.env.FACEBOOK_APP_SECRET;
-const REDIRECT_URI = "https://your-app.onrender.com/callback"; // change to your Render URL
+const REDIRECT_URI = "https://flutterApp-9u2n.onrender.com/callback"; // change to your Render URL
 
 // --- Home (Login Page) ---
 app.get("/", (req, res) => {
