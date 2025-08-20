@@ -20,17 +20,17 @@ app.use(
 
 // Login route (already working for Facebook)
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/login.html"));
+  res.sendFile(path.join(__dirname, "login.html"));
 });
 
 // After login success → redirect to dashboard
 app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/dashboard.html"));
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 // Scheduler page
 app.get("/scheduler", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/scheduler.html"));
+  res.sendFile(path.join(__dirname, "scheduler.html"));
 });
 
 // Example API for posting to FB (placeholder)
