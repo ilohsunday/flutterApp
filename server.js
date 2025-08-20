@@ -14,7 +14,7 @@ app.use(express.static(__dirname));
 
 // Routes
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/dashboard", (req, res) => {
