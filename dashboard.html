@@ -3,113 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <title>Facebook Page Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1877f2;
+      color: white;
+      width: 100%;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .container {
+      margin-top: 2rem;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 500px;
+      max-width: 95%;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    select, textarea, input[type="datetime-local"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 1.2rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      background: #1877f2;
+      border: none;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #145dbf;
+    }
+
+    .secondary {
+      background: #42b72a;
+    }
+
+    .secondary:hover {
+      background: #2e8c1f;
+    }
+
+    .status {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .status.success {
+      background: #e6f4ea;
+      color: #1e4620;
+      border: 1px solid #42b72a;
+      display: block;
+    }
+
+    .status.error {
+      background: #fdecea;
+      color: #611a15;
+      border: 1px solid #d93025;
+      display: block;
+    }
+  </style>
 </head>
 <body>
-  <h1>📢 Facebook Page Dashboard</h1>
+  <header>📢 Facebook Page Dashboard</header>
 
-  <label for="pages">Select a Page:</label>
-  <select id="pages"></select>
-  <br><br>
+  <div class="container">
+    <label for="pages">Select a Page</label>
+    <select id="pages"></select>
 
-  <textarea id="message" placeholder="Write your post..."></textarea>
-  <br><br>
+    <label for="message">Write a Post</label>
+    <textarea id="message" placeholder="What's on your mind?"></textarea>
 
-  <button onclick="postNow()">Post Now</button>
-  <button onclick="schedulePost()">Schedule Post</button>
-  <input type="datetime-local" id="scheduleTime">
+    <label for="scheduleTime">Schedule Time</label>
+    <input type="datetime-local" id="scheduleTime">
+
+    <div class="btn-group">
+      <button onclick="postNow()">Post Now</button>
+      <button class="secondary" onclick="schedulePost()">Schedule Post</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
 
   <script>
-    let userToken = null;
-    let pages = [];
-    let selectedPage = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const userToken = urlParams.get("token");
+    let selectedPageToken = "";
+    let selectedPageId = "";
 
-    // ✅ Extract token from query string
-    function getTokenFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get("token");
-    }
-
-    // ✅ Load user's pages
     async function loadPages() {
-      userToken = getTokenFromUrl();
-      if (!userToken) {
-        alert("❌ No user token found. Please log in again.");
-        return;
-      }
+      const res = await fetch(`/pages?token=${userToken}`);
+      const data = await res.json();
+      const pagesDropdown = document.getElementById("pages");
 
-      try {
-        const res = await fetch(`/pages?token=${userToken}`);
-        const data = await res.json();
-
-        if (!data.data || data.data.length === 0) {
-          alert("❌ No pages found or missing permissions.");
-          return;
-        }
-
-        pages = data.data;
-        const pageSelect = document.getElementById("pages");
-
-        // Populate dropdown
-        pages.forEach((page, index) => {
+      if (data.data) {
+        data.data.forEach(page => {
           const option = document.createElement("option");
-          option.value = index;
+          option.value = page.id + "|" + page.access_token;
           option.textContent = page.name;
-          pageSelect.appendChild(option);
+          pagesDropdown.appendChild(option);
         });
 
-        // Set default selected page
-        selectedPage = pages[0];
-
-        pageSelect.addEventListener("change", (e) => {
-          selectedPage = pages[e.target.value];
-          console.log("✅ Selected page:", selectedPage);
-        });
-
-      } catch (err) {
-        console.error("Error loading pages:", err);
+        // Default select first page
+        selectedPageId = data.data[0].id;
+        selectedPageToken = data.data[0].access_token;
       }
+
+      pagesDropdown.addEventListener("change", (e) => {
+        const [id, token] = e.target.value.split("|");
+        selectedPageId = id;
+        selectedPageToken = token;
+      });
     }
 
-    // ✅ Post immediately
     async function postNow() {
-      if (!selectedPage) return alert("❌ Please select a page first.");
       const message = document.getElementById("message").value;
-
       const res = await fetch("/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageId: selectedPage.id,
-          pageAccessToken: selectedPage.access_token,
-          message
-        })
+        body: JSON.stringify({ pageId: selectedPageId, pageAccessToken: selectedPageToken, message })
       });
       const data = await res.json();
-      alert(JSON.stringify(data));
+      showStatus(data.error ? "❌ " + data.error.message : "✅ Post published successfully!", !data.error);
     }
 
-    // ✅ Schedule post
     async function schedulePost() {
-      if (!selectedPage) return alert("❌ Please select a page first.");
       const message = document.getElementById("message").value;
       const scheduleTime = document.getElementById("scheduleTime").value;
-
       const res = await fetch("/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageId: selectedPage.id,
-          pageAccessToken: selectedPage.access_token,
-          message,
-          time: scheduleTime
-        })
+        body: JSON.stringify({ pageId: selectedPageId, pageAccessToken: selectedPageToken, message, time: scheduleTime })
       });
       const data = await res.json();
-      alert(JSON.stringify(data));
+      showStatus(data.error ? "❌ " + data.error.message : "⏰ Post scheduled successfully!", !data.error);
     }
 
-    // Load pages on startup
+    function showStatus(msg, success = true) {
+      const statusEl = document.getElementById("status");
+      statusEl.textContent = msg;
+      statusEl.className = "status " + (success ? "success" : "error");
+    }
+
     loadPages();
   </script>
 </body>
