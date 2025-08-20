@@ -2,47 +2,115 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard</title>
+  <title>Facebook Page Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>📢 Facebook Page Dashboard</h1>
+
+  <label for="pages">Select a Page:</label>
+  <select id="pages"></select>
+  <br><br>
 
   <textarea id="message" placeholder="Write your post..."></textarea>
   <br><br>
 
   <button onclick="postNow()">Post Now</button>
   <button onclick="schedulePost()">Schedule Post</button>
-
   <input type="datetime-local" id="scheduleTime">
 
   <script>
-    const pageId = "YOUR_PAGE_ID"; // replace or fetch dynamically
-    const pageAccessToken = "YOUR_PAGE_ACCESS_TOKEN"; // replace or fetch dynamically
+    let userToken = null;
+    let pages = [];
+    let selectedPage = null;
 
+    // ✅ Extract token from query string
+    function getTokenFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get("token");
+    }
+
+    // ✅ Load user's pages
+    async function loadPages() {
+      userToken = getTokenFromUrl();
+      if (!userToken) {
+        alert("❌ No user token found. Please log in again.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/pages?token=${userToken}`);
+        const data = await res.json();
+
+        if (!data.data || data.data.length === 0) {
+          alert("❌ No pages found or missing permissions.");
+          return;
+        }
+
+        pages = data.data;
+        const pageSelect = document.getElementById("pages");
+
+        // Populate dropdown
+        pages.forEach((page, index) => {
+          const option = document.createElement("option");
+          option.value = index;
+          option.textContent = page.name;
+          pageSelect.appendChild(option);
+        });
+
+        // Set default selected page
+        selectedPage = pages[0];
+
+        pageSelect.addEventListener("change", (e) => {
+          selectedPage = pages[e.target.value];
+          console.log("✅ Selected page:", selectedPage);
+        });
+
+      } catch (err) {
+        console.error("Error loading pages:", err);
+      }
+    }
+
+    // ✅ Post immediately
     async function postNow() {
+      if (!selectedPage) return alert("❌ Please select a page first.");
       const message = document.getElementById("message").value;
+
       const res = await fetch("/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, pageAccessToken, message })
+        body: JSON.stringify({
+          pageId: selectedPage.id,
+          pageAccessToken: selectedPage.access_token,
+          message
+        })
       });
       const data = await res.json();
       alert(JSON.stringify(data));
     }
 
+    // ✅ Schedule post
     async function schedulePost() {
+      if (!selectedPage) return alert("❌ Please select a page first.");
       const message = document.getElementById("message").value;
       const scheduleTime = document.getElementById("scheduleTime").value;
 
       const res = await fetch("/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, pageAccessToken, message, scheduleTime })
+        body: JSON.stringify({
+          pageId: selectedPage.id,
+          pageAccessToken: selectedPage.access_token,
+          message,
+          time: scheduleTime
+        })
       });
       const data = await res.json();
       alert(JSON.stringify(data));
-      document.getElementByTagNames('h1'). innerText = JSON.stringify(data);
     }
+
+    // Load pages on startup
+    loadPages();
   </script>
 </body>
 </html>
