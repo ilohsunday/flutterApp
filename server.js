@@ -26,6 +26,10 @@ app.get("/scheduler", (req, res) => {
   res.sendFile(path.join(__dirname, "scheduler.html"));
 });
 
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
 // --- Login route (redirect to Facebook OAuth) ---
 app.get("/login", (req, res) => {
   const redirectUri = "https://flutterapp-9u2n.onrender.com/callback";
@@ -54,7 +58,7 @@ app.get("/callback", async (req, res) => {
     }
 
     // ✅ Redirect back to dashboard with token
-    res.redirect(`/dashboard.html?token=${tokenData.access_token}`);
+    res.redirect(`/dashboard?token=${tokenData.access_token}`);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
