@@ -21,7 +21,7 @@
 
     async function postNow() {
       const message = document.getElementById("message").value;
-      const res = await fetch("/post-now", {
+      const res = await fetch("/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, pageAccessToken, message })
@@ -34,7 +34,7 @@
       const message = document.getElementById("message").value;
       const scheduleTime = document.getElementById("scheduleTime").value;
 
-      const res = await fetch("/schedule-post", {
+      const res = await fetch("/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, pageAccessToken, message, scheduleTime })
