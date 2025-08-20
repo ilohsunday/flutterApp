@@ -54,7 +54,7 @@ app.get("/callback", async (req, res) => {
     }
 
     // ✅ Redirect back to dashboard with token
-    res.redirect(`/dashboard?token=${tokenData.access_token}`);
+    res.redirect(`/dashboard.html?token=${tokenData.access_token}`);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
